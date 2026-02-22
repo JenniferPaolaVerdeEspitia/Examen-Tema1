@@ -2,7 +2,7 @@
 
 (() => {
   // ======== CONFIG ========
-  const BG_SRC = "img/fondo-duckhunt.png"; // <-- TU FONDO (pon la imagen aquí)
+  const BG_SRC = "img/Fondo.PNG"; // <-- TU FONDO (pon la imagen aquí)
   const HS_KEY = "duckhunt_highscore_v1";
   const AMMO_MAX = 6;
 
