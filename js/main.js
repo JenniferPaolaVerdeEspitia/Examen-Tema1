@@ -6,7 +6,6 @@
   const DUCK_SRC = "img/pato.png";
   const DOG_SRC  = "img/perro.png";
 
-  // ✅ Esto debe ser una CLAVE, no ruta de imagen
   const HS_KEY   = "duckhunt_highscore_v3";
 
   const AMMO_MAX = 6;
@@ -80,7 +79,6 @@
       return;
     }
 
-    // cover
     const iw = bgImg.naturalWidth;
     const ih = bgImg.naturalHeight;
     const scale = Math.max(w / iw, h / ih);
@@ -259,32 +257,83 @@
     }
   }
 
-  // ========= DOG (perro caminando en el pasto) =========
-  const dog = { x: -140, vx: 85, t: 0, dir: 1 };
+  // ========= DOG (caminar MUY visible con 1 sola imagen) =========
+  const dog = { x: -160, vx: 95, dir: 1, stepT: 0, dustT: 0 };
+  const dogDust = [];
 
   function resetDog() {
-    dog.x = -140;
-    dog.t = 0;
+    dog.x = -160;
+    dog.stepT = 0;
+    dog.dustT = 0;
     dog.dir = 1;
+    dogDust.length = 0;
+  }
+
+  function spawnDogDust(x, y) {
+    const n = Math.floor(rand(4, 7)); // MÁS polvo para que se note
+    for (let i = 0; i < n; i++) {
+      dogDust.push({
+        x: x + rand(-8, 6),
+        y: y + rand(-3, 3),
+        vx: rand(-30, -90),
+        vy: rand(-40, -110),
+        t: 0,
+        life: rand(0.22, 0.36),
+        r: rand(2.0, 3.6)
+      });
+    }
   }
 
   function updateDog(dt, round) {
     const w = canvas.clientWidth;
-    dog.t += dt;
+    const h = canvas.clientHeight;
 
-    // velocidad sube un poquito por ronda
-    dog.vx = 85 + (round - 1) * 10;
-
+    // velocidad aumenta con ronda
+    dog.vx = 95 + (round - 1) * 12;
     dog.x += dog.vx * dt;
 
-    // loop
-    if (dog.x > w + 140) dog.x = -140;
+    if (dog.x > w + 170) dog.x = -170;
+
+    // animación de pasos más rápida (para que se note)
+    dog.stepT += dt * (1.15 + (round - 1) * 0.05);
+    dog.dustT += dt;
+
+    const groundY = h * 0.78;
+    const stepSpeed = 16 + (round - 1) * 1.2; // MÁS rápido
+    const stepWave = Math.sin(dog.stepT * stepSpeed);
+
+    // polvo al “impacto”
+    if (dog.dustT > 0.05 && stepWave < -0.78) {
+      dog.dustT = 0;
+      spawnDogDust(dog.x + 46, groundY + 5);
+    }
+
+    for (const p of dogDust) {
+      p.t += dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 340 * dt;
+    }
+    for (let i = dogDust.length - 1; i >= 0; i--) {
+      if (dogDust[i].t >= dogDust[i].life) dogDust.splice(i, 1);
+    }
+  }
+
+  function drawDogDust() {
+    for (const p of dogDust) {
+      const k = 1 - (p.t / p.life);
+      ctx.save();
+      ctx.globalAlpha = 0.60 * k;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * (0.7 + 0.7 * (1 - k)), 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   function drawDog() {
     const h = canvas.clientHeight;
-
-    // “piso” aproximado (zona del pasto)
     const groundY = h * 0.78;
 
     if (!dogImage.complete || !dogImage.naturalWidth) return;
@@ -292,42 +341,60 @@
     const iw = dogImage.naturalWidth;
     const ih = dogImage.naturalHeight;
 
-    // tamaño en pantalla (ajusta si lo quieres más grande)
-    const targetH = 62;
-    const scale = targetH / ih;
+    const targetH = 70; // un poco más grande
+    const scaleBase = targetH / ih;
 
-    const drawW = iw * scale;
-    const drawH = ih * scale;
+    // pasos muy visibles
+    const stepSpeed = 16;
+    const s1 = Math.sin(dog.stepT * stepSpeed);
+    const s2 = Math.sin(dog.stepT * stepSpeed * 2);
 
-    // simular caminar (bamboleo)
-    const bob = Math.sin(dog.t * 10) * 2;
-    const tilt = Math.sin(dog.t * 10) * 0.04;
+    // rebote fuerte
+    const bobY = s1 * 4.0 + s2 * 1.2;
 
-    const x = dog.x;
-    const y = groundY - drawH + bob;
+    // inclinación visible
+    const tilt = s1 * 0.10;
+
+    // squash/stretch fuerte en impacto
+    const impact = (s1 < 0 ? Math.abs(s1) : 0);
+    const scaleX = 1 + impact * 0.28;
+    const scaleY = 1 - impact * 0.20;
+
+    // jitter de “pasito”
+    const jitterX = (s1 < -0.65 ? -2.2 : 0);
+
+    const drawW = iw * scaleBase;
+    const drawH = ih * scaleBase;
+
+    const x = dog.x + jitterX;
+    const y = groundY - drawH + bobY;
 
     ctx.save();
 
-    // sombra
+    // sombra más dinámica
+    const shadowW = drawW * (0.30 + impact * 0.14);
+    const shadowH = 7 - impact * 2.0;
     ctx.globalAlpha = 0.25;
     ctx.beginPath();
-    ctx.ellipse(x + drawW * 0.45, groundY + 6, drawW * 0.28, 7, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + drawW * 0.46, groundY + 6, shadowW, shadowH, 0, 0, Math.PI * 2);
     ctx.fillStyle = "black";
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // dibujo perro
     ctx.translate(x + drawW / 2, y + drawH / 2);
     ctx.rotate(tilt);
-    if (dog.dir === -1) ctx.scale(-1, 1);
+    ctx.scale(scaleX, scaleY);
+
     ctx.drawImage(dogImage, -drawW / 2, -drawH / 2, drawW, drawH);
 
     ctx.restore();
+
+    drawDogDust();
   }
 
   // ========= GAME STATE =========
   let state = "menu";   // menu | playing | roundEnd | gameOver
-  let running = true;   // pausa
+  let running = true;
 
   let lastTime = 0;
   let ducks = [];
@@ -574,7 +641,6 @@
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
-    // CLICK en pantallas
     if (state === "menu") {
       sfx.inicio();
       round = 1;
@@ -704,7 +770,6 @@
   function drawNesHUD() {
     const w = canvas.clientWidth;
 
-    // barra superior
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,.55)";
     ctx.fillRect(0, 0, w, 46);
@@ -713,15 +778,12 @@
     ctx.font = "800 14px Oxanium, system-ui";
     ctx.fillText(`RONDA ${round}`, 12, 28);
 
-    // derecha
     const textRight = `PUNTAJE ${score}   RÉCORD ${highScore}`;
     ctx.textAlign = "right";
     ctx.fillText(textRight, w - 12, 28);
     ctx.textAlign = "left";
-
     ctx.restore();
 
-    // barra inferior
     const h = canvas.clientHeight;
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,.45)";
@@ -740,7 +802,6 @@
     ctx.textAlign = "right";
     ctx.fillText(`ESCAPADOS ${escaped}/${MAX_ESCAPES}`, w - 12, h - 14);
     ctx.textAlign = "left";
-
     ctx.restore();
   }
 
@@ -764,13 +825,11 @@
     ctx.lineWidth = 2;
     ctx.strokeRect(bx, by, bw, bh);
 
-    // ✅ DUCK HUNT se mantiene igual (no cambiamos estilo aquí)
     ctx.fillStyle = "rgba(255,255,255,.95)";
     ctx.textAlign = "center";
     ctx.font = "800 42px system-ui, -apple-system, Segoe UI, Roboto";
     ctx.fillText(title, w / 2, by + 70);
 
-    // ✅ resto en Oxanium (nuevo estilo)
     ctx.font = "800 18px Oxanium, system-ui";
     let yy = by + 115;
     for (const line of lines) {
@@ -792,7 +851,6 @@
     trySpawn(ts);
 
     if (state === "playing") {
-      // ✅ mover perro solo cuando juega
       updateDog(dt, round);
 
       for (const d of ducks) d.update(dt);
@@ -801,10 +859,7 @@
       if (spawnedThisRound >= DUCKS_PER_ROUND && resolvedThisRound >= DUCKS_PER_ROUND) {
         endRound();
       }
-
-      if (escaped >= MAX_ESCAPES) {
-        gameOver();
-      }
+      if (escaped >= MAX_ESCAPES) gameOver();
     }
 
     updateFX(dt);
@@ -814,14 +869,8 @@
     ctx.clearRect(0, 0, w, h);
 
     drawBackground();
-
-    // ✅ perro caminando sobre el pasto
     drawDog();
-
-    // patos volando
     for (const d of ducks) d.draw();
-
-    // disparos/partículas
     drawFX();
 
     drawNesHUD();
