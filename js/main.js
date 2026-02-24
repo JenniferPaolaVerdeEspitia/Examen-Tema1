@@ -1,15 +1,16 @@
-/* main.js - Duck Hunt Canvas 2D (Rounds + NES HUD + SFX/Music + Game Over) */
+/* main.js - Duck Hunt Canvas 2D (Rondas + HUD NES en Español + FX + Sonidos 8-bit + Game Over) */
 
 (() => {
   // ========= CONFIG =========
   const BG_SRC   = "img/Fondo.PNG";
   const DUCK_SRC = "img/pato.png";
-  const HS_KEY   = "duckhunt_highscore_v2";
+  const HS_KEY   = "img/Logo.png";
 
-  const AMMO_MAX     = 6;
-  const DUCKS_PER_ROUND = 10;     // patos por ronda
-  const MAX_ROUNDS   = 5;         // total rondas
-  const MAX_ESCAPES  = 20;        // game over si se escapan muchos
+  const AMMO_MAX = 6;
+
+  const DUCKS_PER_ROUND = 10;
+  const MAX_ROUNDS = 5;
+  const MAX_ESCAPES = 20;
 
   // ========= DOM =========
   const canvas = document.getElementById("gameCanvas");
@@ -17,11 +18,11 @@
 
   const elScore = document.getElementById("score");
   const elHighScore = document.getElementById("highScore");
-  const elLevel = document.getElementById("level");     // lo usaremos como round también
+  const elLevel = document.getElementById("level");
   const elAmmo = document.getElementById("ammo");
   const elMisses = document.getElementById("misses");
   const elEscaped = document.getElementById("escaped");
-  const elKills = document.getElementById("kills");     // opcional (si lo agregas en HTML)
+  const elKills = document.getElementById("kills");
 
   const btnPause = document.getElementById("btnPause");
   const btnRestart = document.getElementById("btnRestart");
@@ -73,6 +74,7 @@
       return;
     }
 
+    // cover
     const iw = bgImg.naturalWidth;
     const ih = bgImg.naturalHeight;
     const scale = Math.max(w / iw, h / ih);
@@ -162,37 +164,31 @@
     src.stop(t0 + duration);
   }
 
-  // SFX
   const sfx = {
-    shot() { playNoiseBurst({ duration: 0.045, gain: 0.22 }); playTone({ freq: 160, sweepTo: 90, duration: 0.06, gain: 0.08, type: "square" }); },
-    hit()  { playTone({ freq: 880, sweepTo: 520, duration: 0.10, gain: 0.10, type: "triangle" }); },
-    miss() { playTone({ freq: 220, sweepTo: 180, duration: 0.08, gain: 0.08, type: "sawtooth" }); },
-    reload() {
+    disparo() { playNoiseBurst({ duration: 0.045, gain: 0.22 }); playTone({ freq: 160, sweepTo: 90, duration: 0.06, gain: 0.08, type: "square" }); },
+    acierto() { playTone({ freq: 880, sweepTo: 520, duration: 0.10, gain: 0.10, type: "triangle" }); },
+    fallo()   { playTone({ freq: 220, sweepTo: 180, duration: 0.08, gain: 0.08, type: "sawtooth" }); },
+    recarga() {
       playTone({ freq: 600, duration: 0.045, gain: 0.06, type: "square" });
       setTimeout(() => playTone({ freq: 480, duration: 0.06, gain: 0.06, type: "square" }), 55);
     },
-    roundClear() {
-      // pequeño jingle “clear”
-      const notes = [880, 988, 1175, 1568];
-      notes.forEach((f, i) => setTimeout(() => playTone({ freq: f, duration: 0.10, gain: 0.07, type: "square" }), i * 110));
+    rondaCompleta() {
+      [880, 988, 1175, 1568].forEach((f, i) => setTimeout(() => playTone({ freq: f, duration: 0.10, gain: 0.07, type: "square" }), i * 110));
     },
-    gameOver() {
-      const notes = [440, 392, 349, 294, 262];
-      notes.forEach((f, i) => setTimeout(() => playTone({ freq: f, duration: 0.13, gain: 0.08, type: "square" }), i * 140));
+    finJuego() {
+      [440, 392, 349, 294, 262].forEach((f, i) => setTimeout(() => playTone({ freq: f, duration: 0.13, gain: 0.08, type: "square" }), i * 140));
     },
-    startJingle() {
-      const notes = [523, 659, 784, 1046, 784, 659];
-      notes.forEach((f, i) => setTimeout(() => playTone({ freq: f, duration: 0.11, gain: 0.06, type: "square" }), i * 120));
+    inicio() {
+      [523, 659, 784, 1046, 784, 659].forEach((f, i) => setTimeout(() => playTone({ freq: f, duration: 0.11, gain: 0.06, type: "square" }), i * 120));
     }
   };
 
-  // Permisos de audio (Chrome)
   window.addEventListener("pointerdown", () => {
     initAudio();
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
   }, { once: true });
 
-  // ========= FX (disparo/partículas) =========
+  // ========= FX =========
   const shots = [];
   const particles = [];
 
@@ -257,9 +253,9 @@
     }
   }
 
-  // ========= GAME / ROUND STATE =========
-  let state = "menu"; // menu | playing | roundEnd | gameOver
-  let running = true; // pausa
+  // ========= GAME STATE =========
+  let state = "menu";   // menu | playing | roundEnd | gameOver
+  let running = true;   // pausa
 
   let lastTime = 0;
   let ducks = [];
@@ -272,21 +268,41 @@
   let escaped = 0;
   let killsTotal = 0;
 
-  // Round counters
-  let spawnedThisRound = 0;   // cuantos han aparecido
-  let resolvedThisRound = 0;  // muertos + escapados
-  let killsThisRound = 0;     // muertos
-  let roundEndTimer = 0;
+  let spawnedThisRound = 0;
+  let resolvedThisRound = 0;
+  let killsThisRound = 0;
+  let lastSpawn = 0;
 
   let highScore = Number(localStorage.getItem(HS_KEY) || 0);
-  if (elHighScore) elHighScore.textContent = highScore;
+
+  function syncHUD() {
+    if (elScore) elScore.textContent = score;
+    if (elHighScore) elHighScore.textContent = highScore;
+    if (elLevel) elLevel.textContent = round;
+    if (elAmmo) elAmmo.textContent = ammo;
+    if (elMisses) elMisses.textContent = misses;
+    if (elEscaped) elEscaped.textContent = escaped;
+    if (elKills) elKills.textContent = killsTotal;
+  }
+
+  function setScore(v) {
+    score = v;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem(HS_KEY, String(highScore));
+    }
+    syncHUD();
+  }
+
+  function setAmmo(v) {
+    ammo = v;
+    syncHUD();
+  }
 
   function difficulty() {
-    // Round sube dificultad
     const speed = 130 + (round - 1) * 30;
     const spawnEvery = Math.max(360, 980 - (round - 1) * 110);
     const maxAlive = Math.min(10, 3 + Math.floor((round - 1) / 1.8));
-
     const lifeTime = Math.max(1800, 5200 - (round - 1) * 380);
 
     const zigAmp = clamp(16 + (round - 1) * 3.2, 16, 52);
@@ -314,16 +330,13 @@
 
       this.size = rand(56, 88);
 
-      // Zigzag
       this.zigAmp = zigAmp * rand(0.75, 1.15);
       this.zigFreq = zigFreq * rand(0.85, 1.15);
       this.zigPhase = rand(0, Math.PI * 2);
 
-      // Flap (visual)
       this.flapFreq = flapFreq * rand(0.9, 1.2);
       this.flapPhase = rand(0, Math.PI * 2);
 
-      // Life
       this.spawnAt = performance.now();
       this.lifeTime = lifeTime + rand(-450, 450);
 
@@ -333,7 +346,7 @@
       this.rot = rand(-0.5, 0.5);
 
       this.alive = true;
-      this.countedResolve = false; // para contar 1 sola vez cuando muere/escapa
+      this.countedResolve = false;
     }
 
     get radius() {
@@ -374,7 +387,6 @@
           }
         }
       } else {
-        // dying
         this.deadT += dt;
         this.rot += (this.dir * 2.6) * dt;
 
@@ -430,7 +442,6 @@
       else ctx.rotate(rotAlive);
 
       ctx.scale(scaleX, scaleY);
-
       ctx.drawImage(duckImage, -s / 2, -s / 2, s, s);
       ctx.restore();
     }
@@ -443,34 +454,6 @@
     }
   }
 
-  // ========= HUD setters (panel lateral) =========
-  function syncHUD() {
-    if (elScore) elScore.textContent = score;
-    if (elHighScore) elHighScore.textContent = highScore;
-    if (elLevel) elLevel.textContent = round;   // Nivel = Round
-    if (elAmmo) elAmmo.textContent = ammo;
-    if (elMisses) elMisses.textContent = misses;
-    if (elEscaped) elEscaped.textContent = escaped;
-    if (elKills) elKills.textContent = killsTotal;
-  }
-
-  function setScore(v) {
-    score = v;
-    if (score > highScore) {
-      highScore = score;
-      localStorage.setItem(HS_KEY, String(highScore));
-    }
-    syncHUD();
-  }
-
-  function setAmmo(v) {
-    ammo = v;
-    syncHUD();
-  }
-
-  // ========= ROUND CONTROL =========
-  let lastSpawn = 0;
-
   function startNewRound() {
     ducks = [];
     spawnedThisRound = 0;
@@ -478,21 +461,20 @@
     killsThisRound = 0;
     ammo = AMMO_MAX;
     lastSpawn = 0;
-    roundEndTimer = 0;
     state = "playing";
-    showToast(`ROUND ${round}`);
+
+    showToast(`RONDA ${round}`);
     syncHUD();
   }
 
   function endRound() {
     state = "roundEnd";
-    roundEndTimer = 0;
-    sfx.roundClear();
+    sfx.rondaCompleta();
   }
 
   function gameOver() {
     state = "gameOver";
-    sfx.gameOver();
+    sfx.finJuego();
     syncHUD();
   }
 
@@ -514,16 +496,15 @@
 
   // ========= INPUT =========
   canvas.addEventListener("mousedown", (e) => {
-    // reactivar audio si suspendido
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
 
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
-    // click en menu / end screens
+    // CLICK en pantallas
     if (state === "menu") {
-      sfx.startJingle();
+      sfx.inicio();
       round = 1;
       score = 0;
       misses = 0;
@@ -534,38 +515,30 @@
     }
 
     if (state === "roundEnd") {
-      // siguiente ronda
       round++;
-      if (round > MAX_ROUNDS || escaped >= MAX_ESCAPES) {
-        gameOver();
-      } else {
-        startNewRound();
-      }
+      if (round > MAX_ROUNDS || escaped >= MAX_ESCAPES) gameOver();
+      else startNewRound();
       return;
     }
 
     if (state === "gameOver") {
-      // reiniciar
       state = "menu";
       return;
     }
 
     if (!running) return;
 
-    // disparo FX + sonido
     spawnShotFX(mx, my);
-    sfx.shot();
+    sfx.disparo();
 
-    // sin balas
     if (ammo <= 0) {
-      showToast("Sin balas (R)");
-      sfx.miss();
+      showToast("SIN BALAS (R)");
+      sfx.fallo();
       return;
     }
 
     setAmmo(ammo - 1);
 
-    // hit test
     let hitDuck = null;
     for (let i = ducks.length - 1; i >= 0; i--) {
       if (ducks[i].hit(mx, my)) { hitDuck = ducks[i]; break; }
@@ -581,12 +554,12 @@
       setScore(score + points);
 
       showToast(`+${points}`);
-      sfx.hit();
+      sfx.acierto();
       syncHUD();
     } else {
       misses++;
-      showToast("Fallo");
-      sfx.miss();
+      showToast("FALLO");
+      sfx.fallo();
       syncHUD();
     }
   });
@@ -595,7 +568,7 @@
   function togglePause() {
     if (state !== "playing") return;
     running = !running;
-    if (btnPause) btnPause.textContent = running ? "Pausar" : "Reanudar";
+    if (btnPause) btnPause.textContent = running ? "⏯️ Pausar / Reanudar" : "▶️ Reanudar";
     if (running) {
       lastTime = 0;
       requestAnimationFrame(loop);
@@ -605,8 +578,8 @@
   function reload() {
     if (state !== "playing") return;
     setAmmo(AMMO_MAX);
-    showToast("Recargado");
-    sfx.reload();
+    showToast("RECARGADO");
+    sfx.recarga();
   }
 
   function resetGame() {
@@ -620,11 +593,11 @@
 
     state = "menu";
     running = true;
-    if (btnPause) btnPause.textContent = "Pausar";
+    if (btnPause) btnPause.textContent = "⏯️ Pausar / Reanudar";
     lastTime = 0;
 
     syncHUD();
-    showToast("Reiniciado");
+    showToast("REINICIADO");
   }
 
   if (btnPause) btnPause.addEventListener("click", togglePause);
@@ -637,7 +610,7 @@
     if (k === "r") reload();
     if (k === "m") {
       soundEnabled = !soundEnabled;
-      showToast(soundEnabled ? "Sonido ON" : "Sonido OFF");
+      showToast(soundEnabled ? "SONIDO ON" : "SONIDO OFF");
     }
   });
 
@@ -648,12 +621,12 @@
         if (!document.fullscreenElement) await parent.requestFullscreen();
         else await document.exitFullscreen();
       } catch {
-        showToast("No disponible");
+        showToast("NO DISPONIBLE");
       }
     });
   }
 
-  // ========= NES STYLE CANVAS UI =========
+  // ========= NES HUD (Español) =========
   function drawNesHUD() {
     const w = canvas.clientWidth;
 
@@ -664,17 +637,17 @@
 
     ctx.fillStyle = "rgba(255,255,255,.92)";
     ctx.font = "700 14px system-ui, -apple-system, Segoe UI, Roboto";
-    ctx.fillText(`ROUND ${round}`, 12, 28);
+    ctx.fillText(`RONDA ${round}`, 12, 28);
 
     // derecha
-    const textRight = `SCORE ${score}   HI ${highScore}`;
+    const textRight = `PUNTAJE ${score}   RÉCORD ${highScore}`;
     ctx.textAlign = "right";
     ctx.fillText(textRight, w - 12, 28);
     ctx.textAlign = "left";
 
     ctx.restore();
 
-    // barra inferior tipo “status”
+    // barra inferior
     const h = canvas.clientHeight;
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,.45)";
@@ -684,14 +657,14 @@
     ctx.font = "600 14px system-ui, -apple-system, Segoe UI, Roboto";
 
     const left = 12;
-    ctx.fillText(`AMMO ${ammo}`, left, h - 14);
-    ctx.fillText(`KILLS ${killsThisRound}/${DUCKS_PER_ROUND}`, left + 120, h - 14);
+    ctx.fillText(`BALAS ${ammo}`, left, h - 14);
+    ctx.fillText(`PATOS ${killsThisRound}/${DUCKS_PER_ROUND}`, left + 120, h - 14);
 
     const leftDucks = DUCKS_PER_ROUND - resolvedThisRound;
-    ctx.fillText(`DUCKS LEFT ${Math.max(0, leftDucks)}`, left + 270, h - 14);
+    ctx.fillText(`RESTANTES ${Math.max(0, leftDucks)}`, left + 270, h - 14);
 
     ctx.textAlign = "right";
-    ctx.fillText(`ESCAPED ${escaped}/${MAX_ESCAPES}`, w - 12, h - 14);
+    ctx.fillText(`ESCAPADOS ${escaped}/${MAX_ESCAPES}`, w - 12, h - 14);
     ctx.textAlign = "left";
 
     ctx.restore();
@@ -705,8 +678,7 @@
     ctx.fillStyle = "rgba(0,0,0,.65)";
     ctx.fillRect(0, 0, w, h);
 
-    // “marco” tipo NES
-    const bw = Math.min(520, w - 60);
+    const bw = Math.min(560, w - 60);
     const bh = 240;
     const bx = (w - bw) / 2;
     const by = (h - bh) / 2;
@@ -733,7 +705,7 @@
     ctx.restore();
   }
 
-  // ========= MAIN LOOP =========
+  // ========= LOOP =========
   function loop(ts) {
     if (state === "playing" && !running) return;
 
@@ -741,20 +713,16 @@
     const dt = clamp((ts - lastTime) / 1000, 0, 0.033);
     lastTime = ts;
 
-    // spawn
     trySpawn(ts);
 
-    // update
     if (state === "playing") {
       for (const d of ducks) d.update(dt);
       ducks = ducks.filter(d => d.alive);
 
-      // si ya spawneó todos y ya se resolvieron todos -> fin ronda
       if (spawnedThisRound >= DUCKS_PER_ROUND && resolvedThisRound >= DUCKS_PER_ROUND) {
         endRound();
       }
 
-      // game over por escapes
       if (escaped >= MAX_ESCAPES) {
         gameOver();
       }
@@ -762,44 +730,40 @@
 
     updateFX(dt);
 
-    // draw
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     ctx.clearRect(0, 0, w, h);
 
     drawBackground();
-
     for (const d of ducks) d.draw();
     drawFX();
 
     drawNesHUD();
+    syncHUD();
 
     if (state === "menu") {
       drawCenterOverlay("DUCK HUNT", [
         "CLICK PARA INICIAR",
         "R = RECARGAR   P = PAUSA   M = SONIDO",
-        `TOP SCORE = ${highScore}`
+        `MEJOR PUNTAJE = ${highScore}`
       ]);
     }
 
     if (state === "roundEnd") {
-      drawCenterOverlay(`ROUND ${round} CLEAR`, [
-        `KILLS: ${killsThisRound}/${DUCKS_PER_ROUND}`,
-        `SCORE: ${score}`,
+      drawCenterOverlay(`RONDA ${round} COMPLETADA`, [
+        `PATOS: ${killsThisRound}/${DUCKS_PER_ROUND}`,
+        `PUNTAJE: ${score}`,
         "CLICK PARA CONTINUAR"
       ]);
     }
 
     if (state === "gameOver") {
-      drawCenterOverlay("GAME OVER", [
-        `FINAL SCORE: ${score}`,
-        `HI-SCORE: ${highScore}`,
-        "CLICK PARA VOLVER AL MENU"
+      drawCenterOverlay("FIN DEL JUEGO", [
+        `PUNTAJE FINAL: ${score}`,
+        `RÉCORD: ${highScore}`,
+        "CLICK PARA VOLVER AL MENÚ"
       ]);
     }
-
-    // Sync panel
-    syncHUD();
 
     requestAnimationFrame(loop);
   }
@@ -808,6 +772,5 @@
   resizeCanvas();
   syncHUD();
   state = "menu";
-
   requestAnimationFrame(loop);
 })();

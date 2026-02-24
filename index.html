@@ -3,15 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Duck Hunt - Canvas 2D</title>
+  <title>Duck Hunt</title>
 
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Fuente estilo videojuego -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
   <style>
     body{
       background:#0b1220;
       color:white;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
 
     .glass{
@@ -22,6 +28,27 @@
       backdrop-filter: blur(8px);
     }
 
+    /* ===== HEADER gamer ===== */
+    .game-title{
+      font-family: "Press Start 2P", system-ui;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
+    .game-subtitle{
+      color: rgba(255,255,255,.72);
+      font-weight: 600;
+    }
+
+    .game-logo{
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+    }
+
+    /* ===== Canvas ===== */
     #gameCanvas{
       width:100%;
       height:480px;
@@ -47,21 +74,87 @@
       border:1px solid rgba(255,255,255,.2);
       opacity:0;
       transition:.3s;
+      pointer-events:none;
+      user-select:none;
+      font-weight: 800;
     }
 
-    .toast-hit.show{
-      opacity:1;
-    }
+    .toast-hit.show{ opacity:1; }
 
-    /* NUEVO ESTILO PARA EL CORREO */
     .email-link{
       color:#00c8ff;
       text-decoration:none;
       font-weight:500;
     }
+    .email-link:hover{ text-decoration:underline; }
 
-    .email-link:hover{
-      text-decoration:underline;
+    /* ===== Botones estilo videojuego ===== */
+    .game-btn{
+      border: 0;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-weight: 900;
+      letter-spacing: .7px;
+      color: #0b1220;
+      text-transform: uppercase;
+      transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,.35);
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .game-btn::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(120deg, rgba(255,255,255,.35), rgba(255,255,255,0));
+      transform: translateX(-60%);
+      transition: transform .25s ease;
+    }
+    .game-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+    .game-btn:hover::after{ transform: translateX(0%); }
+    .game-btn:active{
+      transform: translateY(2px) scale(.99);
+      filter: brightness(.98);
+    }
+
+    .game-btn-primary{
+      background: linear-gradient(180deg, #FFD400, #FFB800);
+      box-shadow: 0 10px 24px rgba(255,212,0,.18), 0 10px 22px rgba(0,0,0,.35);
+    }
+    .game-btn-secondary{
+      background: linear-gradient(180deg, #E9EEF6, #BAC7DA);
+      box-shadow: 0 10px 24px rgba(180,200,230,.18), 0 10px 22px rgba(0,0,0,.35);
+    }
+    .game-btn-danger{
+      background: linear-gradient(180deg, #FF5C7A, #D72638);
+      color: white;
+      box-shadow: 0 10px 24px rgba(215,38,56,.20), 0 10px 22px rgba(0,0,0,.35);
+    }
+    .game-btn-accent{
+      background: linear-gradient(180deg, #45E2FF, #00C8FF);
+      box-shadow: 0 10px 24px rgba(0,200,255,.18), 0 10px 22px rgba(0,0,0,.35);
+    }
+
+    /* ===== Instrucciones estilo “teclas” ===== */
+    .tips{
+      color: rgba(255,255,255,.86);
+      margin: 0;
+      padding-left: 18px;
+    }
+    .tips li{ margin: .35rem 0; }
+    kbd{
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.22);
+      border-bottom-width: 3px;
+      border-radius: 8px;
+      padding: 2px 8px;
+      font-weight: 900;
+      color: rgba(255,255,255,.92);
+      font-size: .85rem;
     }
   </style>
 </head>
@@ -71,14 +164,20 @@
 <!-- HEADER -->
 <header class="py-4">
   <div class="container">
-    <div class="glass p-4 d-flex justify-content-between align-items-center">
-      <div>
-        <h1 class="h3">🎯 Duck Hunt - Canvas 2D</h1>
-        <small>Dispara con click • Niveles • Multiobjetos aleatorios</small>
+    <div class="glass p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <!-- LOGO -->
+        <img src="img/logo.png" alt="Logo Duck Hunt" class="game-logo">
+
+        <div>
+          <h1 class="h4 mb-1 game-title">Duck Hunt</h1>
+          <div class="game-subtitle">Apunta • Dispara • Mejora tu récord</div>
+        </div>
       </div>
-      <div>
-        <button id="btnPause" class="btn btn-outline-light btn-sm">Pausar</button>
-        <button id="btnRestart" class="btn btn-warning btn-sm">Reiniciar</button>
+
+      <div class="d-flex gap-2 flex-wrap justify-content-end">
+        <button id="btnPause" class="game-btn game-btn-secondary">⏯️ Pausar / Reanudar</button>
+        <button id="btnRestart" class="game-btn game-btn-danger">🔁 Reiniciar</button>
       </div>
     </div>
   </div>
@@ -92,50 +191,31 @@
       <!-- PANEL -->
       <div class="col-lg-4">
         <div class="glass p-4">
-          <h5>Panel del Juego</h5>
+          <h5 class="mb-3">Panel del Juego</h5>
 
-          <div class="d-flex justify-content-between">
-            <span>Score:</span>
-            <strong id="score">0</strong>
+          <div class="d-flex justify-content-between"><span>Puntaje:</span><strong id="score">0</strong></div>
+          <div class="d-flex justify-content-between"><span>Récord:</span><strong id="highScore">0</strong></div>
+          <div class="d-flex justify-content-between"><span>Nivel (Ronda):</span><strong id="level">1</strong></div>
+          <div class="d-flex justify-content-between"><span>Balas:</span><strong id="ammo">6</strong></div>
+          <div class="d-flex justify-content-between"><span>Patos muertos:</span><strong id="kills">0</strong></div>
+          <div class="d-flex justify-content-between"><span>Fallos:</span><strong id="misses">0</strong></div>
+          <div class="d-flex justify-content-between"><span>Escapados:</span><strong id="escaped">0</strong></div>
+
+          <hr class="my-3">
+
+          <p class="mb-2"><strong>¿Cómo jugar?</strong></p>
+          <ul class="tips">
+            <li><strong>Dispara</strong> haciendo <kbd>Click</kbd> sobre el pato.</li>
+            <li>Si te quedas sin balas, presiona <kbd>R</kbd> o usa el botón <strong>Recargar</strong>.</li>
+            <li>Pausa o reanuda con <kbd>P</kbd> (o el botón de arriba).</li>
+            <li>Activa/desactiva el sonido con <kbd>M</kbd>.</li>
+            <li>Ganas más puntos por ronda. ¡No dejes que se escapen!</li>
+          </ul>
+
+          <div class="d-grid gap-2 mt-3">
+            <button id="btnReload" class="game-btn game-btn-primary w-100">🔫 Recargar (R)</button>
+            <button id="btnFullscreen" class="game-btn game-btn-accent w-100">🖥️ Pantalla completa</button>
           </div>
-
-          <div class="d-flex justify-content-between">
-            <span>Récord:</span>
-            <strong id="highScore">0</strong>
-          </div>
-
-          <div class="d-flex justify-content-between">
-            <span>Nivel:</span>
-            <strong id="level">1</strong>
-          </div>
-
-          <div class="d-flex justify-content-between">
-            <span>Balas:</span>
-            <strong id="ammo">6</strong>
-          </div>
-
-          <div class="d-flex justify-content-between">
-            <span>Fallos:</span>
-            <strong id="misses">0</strong>
-          </div>
-
-          <div class="d-flex justify-content-between">
-            <span>Escapados:</span>
-            <strong id="escaped">0</strong>
-          </div>
-
-          <hr>
-
-          <p>
-            <strong>Instrucciones:</strong><br>
-            • Click para disparar<br>
-            • R para recargar<br>
-            • P para pausar<br>
-            • Aumenta la dificultad al subir de nivel
-          </p>
-
-          <button id="btnReload" class="btn btn-outline-light btn-sm w-100 mb-2">Recargar (R)</button>
-          <button id="btnFullscreen" class="btn btn-outline-light btn-sm w-100">Pantalla completa</button>
         </div>
       </div>
 
@@ -151,27 +231,19 @@
   </div>
 </main>
 
-<!-- NUEVA SECCIÓN DATOS DEL PROGRAMADOR -->
+<!-- DATOS DEL PROGRAMADOR -->
 <section class="py-4">
   <div class="container">
     <div class="glass p-4">
       <h5 class="mb-3">📇 Datos del programador</h5>
-
-      <p class="mb-1">
-        <strong>Nombre:</strong> Jennifer Paola Verde Espitia
-      </p>
-
-      <p class="mb-1">
-        <strong>Carrera:</strong> ITICS
-      </p>
-
+      <p class="mb-1"><strong>Nombre:</strong> Jennifer Paola Verde Espitia</p>
+      <p class="mb-1"><strong>Carrera:</strong> ITICS</p>
       <p class="mb-0">
         <strong>Correo:</strong>
         <a href="mailto:jenniferpaolaverdeespitia@gmail.com" class="email-link">
           jenniferpaolaverdeespitia@gmail.com
         </a>
       </p>
-
       <hr class="mt-3">
     </div>
   </div>
@@ -189,6 +261,5 @@
 
 <!-- JS PRINCIPAL -->
 <script src="js/main.js"></script>
-
 </body>
 </html>
