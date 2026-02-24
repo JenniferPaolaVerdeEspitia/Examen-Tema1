@@ -8,14 +8,14 @@
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Fuentes -->
+  <!-- Fuente estilo videojuego (título) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <!-- Título estilo videojuego (NO lo cambiamos) -->
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-  <!-- UI/HUD más moderno gamer -->
+  <!-- Fuente HUD / textos (NO cambia el DUCK HUNT del canvas) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <style>
@@ -61,12 +61,8 @@
       border-radius:16px;
       border:1px solid rgba(255,255,255,.2);
       display:block;
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='white' stroke-width='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='10' stroke='white' stroke-width='2'/%3E%3Cline x1='16' y1='22' x2='16' y2='30' stroke='white' stroke-width='2'/%3E%3Cline x1='2' y1='16' x2='10' y2='16' stroke='white' stroke-width='2'/%3E%3Cline x1='22' y1='16' x2='30' y2='16' stroke='white' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2' fill='white'/%3E%3C/svg%3E") 16 16, crosshair;
-    }
 
-    footer{
-      color:rgba(255,255,255,.7);
-      font-family: "Oxanium", system-ui;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='white' stroke-width='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='10' stroke='white' stroke-width='2'/%3E%3Cline x1='16' y1='22' x2='16' y2='30' stroke='white' stroke-width='2'/%3E%3Cline x1='2' y1='16' x2='10' y2='16' stroke='white' stroke-width='2'/%3E%3Cline x1='22' y1='16' x2='30' y2='16' stroke='white' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2' fill='white'/%3E%3C/svg%3E") 16 16, crosshair;
     }
 
     .toast-hit{
@@ -84,7 +80,6 @@
       user-select:none;
       font-weight: 900;
       font-family: "Oxanium", system-ui;
-      letter-spacing: .5px;
     }
     .toast-hit.show{ opacity:1; }
 
@@ -92,7 +87,6 @@
       color:#00c8ff;
       text-decoration:none;
       font-weight:700;
-      font-family: "Oxanium", system-ui;
     }
     .email-link:hover{ text-decoration:underline; }
 
@@ -102,7 +96,7 @@
       padding: 12px 16px;
       border-radius: 14px;
       font-weight: 900;
-      letter-spacing: .8px;
+      letter-spacing: .7px;
       color: #0b1220;
       text-transform: uppercase;
       transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
@@ -150,10 +144,9 @@
 
     /* ===== Instrucciones estilo “teclas” ===== */
     .tips{
-      color: rgba(255,255,255,.90);
+      color: rgba(255,255,255,.86);
       margin: 0;
       padding-left: 18px;
-      font-family: "Oxanium", system-ui;
       font-weight: 600;
     }
     .tips li{ margin: .35rem 0; }
@@ -165,8 +158,20 @@
       padding: 2px 8px;
       font-weight: 900;
       color: rgba(255,255,255,.92);
-      font-size: .9rem;
-      font-family: "Oxanium", system-ui;
+      font-size: .85rem;
+    }
+
+    /* ===== badge meta ===== */
+    .badge-goal{
+      display:inline-flex;
+      align-items:center;
+      gap:.45rem;
+      padding:.35rem .55rem;
+      border-radius: 10px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.16);
+      font-weight: 900;
+      letter-spacing: .2px;
     }
   </style>
 </head>
@@ -178,9 +183,7 @@
   <div class="container">
     <div class="glass p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div class="d-flex align-items-center gap-3">
-        <!-- LOGO -->
         <img src="img/logo.png" alt="Logo Duck Hunt" class="game-logo">
-
         <div>
           <h1 class="h4 mb-1 game-title">Duck Hunt</h1>
           <div class="game-subtitle">Apunta • Dispara • Mejora tu récord</div>
@@ -203,11 +206,28 @@
       <!-- PANEL -->
       <div class="col-lg-4">
         <div class="glass p-4">
-          <h5 class="mb-3" style="font-weight:900;">Panel del Juego</h5>
+          <h5 class="mb-3">Panel del Juego</h5>
 
           <div class="d-flex justify-content-between"><span>Puntaje:</span><strong id="score">0</strong></div>
           <div class="d-flex justify-content-between"><span>Récord:</span><strong id="highScore">0</strong></div>
-          <div class="d-flex justify-content-between"><span>Nivel (Ronda):</span><strong id="level">1</strong></div>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <span>Nivel (Ronda):</span>
+            <strong id="level">1</strong>
+          </div>
+
+          <!-- ✅ META -->
+          <div class="d-flex justify-content-between align-items-center">
+            <span>Meta (ronda):</span>
+            <strong class="badge-goal">🎯 <span id="roundGoal">5</span></strong>
+          </div>
+
+          <!-- ✅ PROGRESO HACIA LA META -->
+          <div class="d-flex justify-content-between align-items-center">
+            <span>Progreso:</span>
+            <strong id="goalProgress">0/5</strong>
+          </div>
+
           <div class="d-flex justify-content-between"><span>Balas:</span><strong id="ammo">6</strong></div>
           <div class="d-flex justify-content-between"><span>Patos muertos:</span><strong id="kills">0</strong></div>
           <div class="d-flex justify-content-between"><span>Fallos:</span><strong id="misses">0</strong></div>
@@ -215,13 +235,13 @@
 
           <hr class="my-3">
 
-          <p class="mb-2" style="font-weight:900;">¿Cómo jugar?</p>
+          <p class="mb-2"><strong>¿Cómo jugar?</strong></p>
           <ul class="tips">
             <li><strong>Dispara</strong> haciendo <kbd>Click</kbd> sobre el pato.</li>
             <li>Si te quedas sin balas, presiona <kbd>R</kbd> o usa <strong>Recargar</strong>.</li>
-            <li>Pausa o reanuda con <kbd>P</kbd> (o el botón de arriba).</li>
-            <li>Activa/desactiva sonido con <kbd>M</kbd>.</li>
-            <li>¡Aumenta la dificultad por ronda! No dejes que se escapen.</li>
+            <li>Pausa / reanuda con <kbd>P</kbd> (o el botón de arriba).</li>
+            <li>Activa / desactiva sonido con <kbd>M</kbd>.</li>
+            <li>Para avanzar debes cumplir la <strong>Meta</strong> de esa ronda.</li>
           </ul>
 
           <div class="d-grid gap-2 mt-3">
@@ -260,16 +280,6 @@
     </div>
   </div>
 </section>
-
-<!-- FOOTER -->
-<footer class="py-4">
-  <div class="container">
-    <div class="glass p-4 d-flex justify-content-between">
-      <div>Desarrollado con HTML5 Canvas 2D + Bootstrap</div>
-      <div id="year"></div>
-    </div>
-  </div>
-</footer>
 
 <!-- JS PRINCIPAL -->
 <script src="js/main.js"></script>

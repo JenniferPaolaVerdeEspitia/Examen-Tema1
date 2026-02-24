@@ -1,4 +1,4 @@
-/* main.js - Duck Hunt Canvas 2D (Rondas + HUD NES en Español + FX + Sonidos 8-bit + Game Over + Perro caminando) */
+/* main.js - Duck Hunt Canvas 2D (Rondas + HUD NES en Español + FX + Sonidos 8-bit + Game Over + Perro caminando + Meta progresiva) */
 
 (() => {
   // ========= CONFIG =========
@@ -26,6 +26,10 @@
   const elEscaped = document.getElementById("escaped");
   const elKills = document.getElementById("kills");
 
+  // ✅ NUEVO: referencias para META en el panel
+  const elRoundGoal = document.getElementById("roundGoal");
+  const elGoalProgress = document.getElementById("goalProgress");
+
   const btnPause = document.getElementById("btnPause");
   const btnRestart = document.getElementById("btnRestart");
   const btnReload = document.getElementById("btnReload");
@@ -38,6 +42,12 @@
   // ========= HELPERS =========
   const rand = (min, max) => Math.random() * (max - min) + min;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  // ✅ meta progresiva por ronda
+  // R1=5, R2=6, R3=7, R4=8, R5=9 (y nunca > DUCKS_PER_ROUND)
+  function requiredKillsForRound(r) {
+    return clamp(4 + r, 1, DUCKS_PER_ROUND);
+  }
 
   function showToast(text) {
     if (!toast) return;
@@ -257,7 +267,7 @@
     }
   }
 
-  // ========= DOG (caminar MUY visible con 1 sola imagen) =========
+  // ========= DOG =========
   const dog = { x: -160, vx: 95, dir: 1, stepT: 0, dustT: 0 };
   const dogDust = [];
 
@@ -270,7 +280,7 @@
   }
 
   function spawnDogDust(x, y) {
-    const n = Math.floor(rand(4, 7)); // MÁS polvo para que se note
+    const n = Math.floor(rand(4, 7));
     for (let i = 0; i < n; i++) {
       dogDust.push({
         x: x + rand(-8, 6),
@@ -288,21 +298,17 @@
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
 
-    // velocidad aumenta con ronda
     dog.vx = 95 + (round - 1) * 12;
     dog.x += dog.vx * dt;
-
     if (dog.x > w + 170) dog.x = -170;
 
-    // animación de pasos más rápida (para que se note)
     dog.stepT += dt * (1.15 + (round - 1) * 0.05);
     dog.dustT += dt;
 
     const groundY = h * 0.78;
-    const stepSpeed = 16 + (round - 1) * 1.2; // MÁS rápido
+    const stepSpeed = 16 + (round - 1) * 1.2;
     const stepWave = Math.sin(dog.stepT * stepSpeed);
 
-    // polvo al “impacto”
     if (dog.dustT > 0.05 && stepWave < -0.78) {
       dog.dustT = 0;
       spawnDogDust(dog.x + 46, groundY + 5);
@@ -341,26 +347,20 @@
     const iw = dogImage.naturalWidth;
     const ih = dogImage.naturalHeight;
 
-    const targetH = 70; // un poco más grande
+    const targetH = 70;
     const scaleBase = targetH / ih;
 
-    // pasos muy visibles
     const stepSpeed = 16;
     const s1 = Math.sin(dog.stepT * stepSpeed);
     const s2 = Math.sin(dog.stepT * stepSpeed * 2);
 
-    // rebote fuerte
     const bobY = s1 * 4.0 + s2 * 1.2;
-
-    // inclinación visible
     const tilt = s1 * 0.10;
 
-    // squash/stretch fuerte en impacto
     const impact = (s1 < 0 ? Math.abs(s1) : 0);
     const scaleX = 1 + impact * 0.28;
     const scaleY = 1 - impact * 0.20;
 
-    // jitter de “pasito”
     const jitterX = (s1 < -0.65 ? -2.2 : 0);
 
     const drawW = iw * scaleBase;
@@ -371,7 +371,6 @@
 
     ctx.save();
 
-    // sombra más dinámica
     const shadowW = drawW * (0.30 + impact * 0.14);
     const shadowH = 7 - impact * 2.0;
     ctx.globalAlpha = 0.25;
@@ -384,7 +383,6 @@
     ctx.translate(x + drawW / 2, y + drawH / 2);
     ctx.rotate(tilt);
     ctx.scale(scaleX, scaleY);
-
     ctx.drawImage(dogImage, -drawW / 2, -drawH / 2, drawW, drawH);
 
     ctx.restore();
@@ -414,6 +412,8 @@
 
   let highScore = Number(localStorage.getItem(HS_KEY) || 0);
 
+  let gameOverReason = "";
+
   function syncHUD() {
     if (elScore) elScore.textContent = score;
     if (elHighScore) elHighScore.textContent = highScore;
@@ -422,6 +422,11 @@
     if (elMisses) elMisses.textContent = misses;
     if (elEscaped) elEscaped.textContent = escaped;
     if (elKills) elKills.textContent = killsTotal;
+
+    // ✅ NUEVO: meta y progreso en panel
+    const req = requiredKillsForRound(round);
+    if (elRoundGoal) elRoundGoal.textContent = req;
+    if (elGoalProgress) elGoalProgress.textContent = `${killsThisRound}/${req}`;
   }
 
   function setScore(v) {
@@ -479,7 +484,7 @@
       this.spawnAt = performance.now();
       this.lifeTime = lifeTime + rand(-450, 450);
 
-      this.state = "alive"; // alive | dying
+      this.state = "alive";
       this.deadT = 0;
       this.deadLife = 0.78;
       this.rot = rand(-0.5, 0.5);
@@ -488,9 +493,7 @@
       this.countedResolve = false;
     }
 
-    get radius() {
-      return this.size * 0.36;
-    }
+    get radius() { return this.size * 0.36; }
 
     kill() {
       if (this.state !== "alive") return;
@@ -602,7 +605,8 @@
     lastSpawn = 0;
     state = "playing";
 
-    showToast(`RONDA ${round}`);
+    const req = requiredKillsForRound(round);
+    showToast(`RONDA ${round} - META ${req}`);
     syncHUD();
   }
 
@@ -611,8 +615,9 @@
     sfx.rondaCompleta();
   }
 
-  function gameOver() {
+  function gameOver(reason = "") {
     state = "gameOver";
+    gameOverReason = reason;
     sfx.finJuego();
     syncHUD();
   }
@@ -655,7 +660,7 @@
 
     if (state === "roundEnd") {
       round++;
-      if (round > MAX_ROUNDS || escaped >= MAX_ESCAPES) gameOver();
+      if (round > MAX_ROUNDS || escaped >= MAX_ESCAPES) gameOver("Se terminó el juego.");
       else startNewRound();
       return;
     }
@@ -766,9 +771,10 @@
     });
   }
 
-  // ========= NES HUD (Español) =========
+  // ========= NES HUD =========
   function drawNesHUD() {
     const w = canvas.clientWidth;
+    const req = requiredKillsForRound(round);
 
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,.55)";
@@ -798,6 +804,8 @@
 
     const leftDucks = DUCKS_PER_ROUND - resolvedThisRound;
     ctx.fillText(`RESTANTES ${Math.max(0, leftDucks)}`, left + 270, h - 14);
+
+    ctx.fillText(`META ${req}`, left + 420, h - 14);
 
     ctx.textAlign = "right";
     ctx.fillText(`ESCAPADOS ${escaped}/${MAX_ESCAPES}`, w - 12, h - 14);
@@ -856,10 +864,16 @@
       for (const d of ducks) d.update(dt);
       ducks = ducks.filter(d => d.alive);
 
+      // fin de ronda: ya se resolvieron los 10
       if (spawnedThisRound >= DUCKS_PER_ROUND && resolvedThisRound >= DUCKS_PER_ROUND) {
-        endRound();
+        const req = requiredKillsForRound(round);
+        if (killsThisRound >= req) endRound();
+        else gameOver(`No alcanzaste la meta: ${killsThisRound}/${req}`);
       }
-      if (escaped >= MAX_ESCAPES) gameOver();
+
+      if (escaped >= MAX_ESCAPES) {
+        gameOver("Se escaparon demasiados patos.");
+      }
     }
 
     updateFX(dt);
@@ -879,14 +893,18 @@
     if (state === "menu") {
       drawCenterOverlay("DUCK HUNT", [
         "CLICK PARA INICIAR",
+        "META PROGRESIVA:",
+        "RONDA 1=5  R2=6  R3=7  R4=8  R5=9",
         "R = RECARGAR   P = PAUSA   M = SONIDO",
         `MEJOR PUNTAJE = ${highScore}`
       ]);
     }
 
     if (state === "roundEnd") {
+      const req = requiredKillsForRound(round);
       drawCenterOverlay(`RONDA ${round} COMPLETADA`, [
         `PATOS: ${killsThisRound}/${DUCKS_PER_ROUND}`,
+        `META: ${req}`,
         `PUNTAJE: ${score}`,
         "CLICK PARA CONTINUAR"
       ]);
@@ -896,8 +914,9 @@
       drawCenterOverlay("FIN DEL JUEGO", [
         `PUNTAJE FINAL: ${score}`,
         `RÉCORD: ${highScore}`,
+        gameOverReason ? gameOverReason : "",
         "CLICK PARA VOLVER AL MENÚ"
-      ]);
+      ].filter(Boolean));
     }
 
     requestAnimationFrame(loop);
