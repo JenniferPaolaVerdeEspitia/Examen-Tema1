@@ -3,8 +3,8 @@
 (() => {
   // ========= CONFIG =========
   const BG_SRC   = "img/Fondo.PNG";
-  const DUCK_SRC = "img/pato.png";
-  const DOG_SRC  = "img/perro.png";
+  const DUCK_SRC = "img/Pato.png";
+  const DOG_SRC  = "img/Perro.png";
 
   const HS_KEY   = "duckhunt_highscore_v3";
 
