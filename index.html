@@ -8,23 +8,20 @@
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- FUENTE DEL TÍTULO (NO CAMBIAR Duck Hunt) -->
+  <!-- Fuente para el título Duck Hunt (NO cambiar) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-  <!-- NUEVA FUENTE PARA TODO LO DEMÁS -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+  <!-- NUEVA fuente “gamer” para el resto de la UI -->
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;800&display=swap" rel="stylesheet">
 
   <style>
     body{
       background:#0b1220;
       color:white;
-
-      /* ✅ TODO EL SITIO (EXCEPTO EL TÍTULO) EN ORBITRON */
-      font-family: "Orbitron", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-family: "Oxanium", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      letter-spacing: .2px;
     }
 
     .glass{
@@ -37,7 +34,6 @@
 
     /* ===== HEADER gamer ===== */
     .game-title{
-      /* ✅ Duck Hunt se queda igual */
       font-family: "Press Start 2P", system-ui;
       letter-spacing: .8px;
       text-transform: uppercase;
@@ -46,7 +42,8 @@
 
     .game-subtitle{
       color: rgba(255,255,255,.72);
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 1.05rem;
     }
 
     .game-logo{
@@ -84,15 +81,15 @@
       transition:.3s;
       pointer-events:none;
       user-select:none;
-      font-weight: 800;
+      font-weight: 900;
+      letter-spacing: .6px;
     }
-
     .toast-hit.show{ opacity:1; }
 
     .email-link{
       color:#00c8ff;
       text-decoration:none;
-      font-weight:500;
+      font-weight:700;
     }
     .email-link:hover{ text-decoration:underline; }
 
@@ -110,9 +107,6 @@
       position: relative;
       overflow: hidden;
       white-space: nowrap;
-
-      /* ✅ Botones en Orbitron también */
-      font-family: "Orbitron", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
     .game-btn::after{
       content:"";
@@ -152,11 +146,12 @@
 
     /* ===== Instrucciones estilo “teclas” ===== */
     .tips{
-      color: rgba(255,255,255,.86);
+      color: rgba(255,255,255,.90);
       margin: 0;
       padding-left: 18px;
+      font-weight: 600;
     }
-    .tips li{ margin: .35rem 0; }
+    .tips li{ margin: .4rem 0; }
     kbd{
       background: rgba(255,255,255,.10);
       border: 1px solid rgba(255,255,255,.22);
@@ -165,10 +160,7 @@
       padding: 2px 8px;
       font-weight: 900;
       color: rgba(255,255,255,.92);
-      font-size: .85rem;
-
-      /* ✅ Teclas con Orbitron */
-      font-family: "Orbitron", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: .9rem;
     }
   </style>
 </head>
@@ -180,9 +172,7 @@
   <div class="container">
     <div class="glass p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div class="d-flex align-items-center gap-3">
-        <!-- LOGO -->
         <img src="img/logo.png" alt="Logo Duck Hunt" class="game-logo">
-
         <div>
           <h1 class="h4 mb-1 game-title">Duck Hunt</h1>
           <div class="game-subtitle">Apunta • Dispara • Mejora tu récord</div>
@@ -219,11 +209,11 @@
 
           <p class="mb-2"><strong>¿Cómo jugar?</strong></p>
           <ul class="tips">
-            <li><strong>Dispara</strong> haciendo <kbd>Click</kbd> sobre el pato.</li>
-            <li>Si te quedas sin balas, presiona <kbd>R</kbd> o usa el botón <strong>Recargar</strong>.</li>
-            <li>Pausa o reanuda con <kbd>P</kbd> (o el botón de arriba).</li>
-            <li>Activa/desactiva el sonido con <kbd>M</kbd>.</li>
-            <li>Ganas más puntos por ronda. ¡No dejes que se escapen!</li>
+            <li><strong>Dispara</strong> con <kbd>Click</kbd> sobre el pato.</li>
+            <li>Si te quedas sin balas: <kbd>R</kbd> o botón <strong>Recargar</strong>.</li>
+            <li>Pausa / reanuda con <kbd>P</kbd> (o botón superior).</li>
+            <li>Sonido ON/OFF con <kbd>M</kbd>.</li>
+            <li>Sube la dificultad por ronda. ¡Evita que se escapen!</li>
           </ul>
 
           <div class="d-grid gap-2 mt-3">
@@ -273,7 +263,6 @@
   </div>
 </footer>
 
-<!-- JS PRINCIPAL -->
 <script src="js/main.js"></script>
 </body>
 </html>

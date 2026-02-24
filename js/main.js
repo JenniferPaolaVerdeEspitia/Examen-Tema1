@@ -1,12 +1,13 @@
-/* main.js - Duck Hunt Canvas 2D (Rondas + HUD NES en Español + FX + Sonidos 8-bit + Game Over) */
+/* main.js - Duck Hunt Canvas 2D (Rondas + HUD NES en Español + FX + Sonidos 8-bit + Game Over + Perro caminando) */
 
 (() => {
   // ========= CONFIG =========
   const BG_SRC   = "img/Fondo.PNG";
   const DUCK_SRC = "img/pato.png";
+  const DOG_SRC  = "img/perro.png";
 
-  // ✅ CLAVE CORRECTA PARA LOCALSTORAGE (NO DEBE SER UNA IMAGEN)
-  const HS_KEY   = "duckhunt_highscore_v2";
+  // ✅ Esto debe ser una CLAVE, no ruta de imagen
+  const HS_KEY   = "duckhunt_highscore_v3";
 
   const AMMO_MAX = 6;
 
@@ -44,7 +45,7 @@
     toast.textContent = text;
     toast.classList.add("show");
     clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => toast.classList.remove("show"), 320);
+    showToast._t = setTimeout(() => toast.classList.remove("show"), 380);
   }
 
   // ========= CANVAS RESIZE (retina) =========
@@ -65,6 +66,9 @@
 
   const duckImage = new Image();
   duckImage.src = DUCK_SRC;
+
+  const dogImage = new Image();
+  dogImage.src = DOG_SRC;
 
   function drawBackground() {
     const w = canvas.clientWidth;
@@ -253,6 +257,72 @@
       ctx.fill();
       ctx.restore();
     }
+  }
+
+  // ========= DOG (perro caminando en el pasto) =========
+  const dog = { x: -140, vx: 85, t: 0, dir: 1 };
+
+  function resetDog() {
+    dog.x = -140;
+    dog.t = 0;
+    dog.dir = 1;
+  }
+
+  function updateDog(dt, round) {
+    const w = canvas.clientWidth;
+    dog.t += dt;
+
+    // velocidad sube un poquito por ronda
+    dog.vx = 85 + (round - 1) * 10;
+
+    dog.x += dog.vx * dt;
+
+    // loop
+    if (dog.x > w + 140) dog.x = -140;
+  }
+
+  function drawDog() {
+    const h = canvas.clientHeight;
+
+    // “piso” aproximado (zona del pasto)
+    const groundY = h * 0.78;
+
+    if (!dogImage.complete || !dogImage.naturalWidth) return;
+
+    const iw = dogImage.naturalWidth;
+    const ih = dogImage.naturalHeight;
+
+    // tamaño en pantalla (ajusta si lo quieres más grande)
+    const targetH = 62;
+    const scale = targetH / ih;
+
+    const drawW = iw * scale;
+    const drawH = ih * scale;
+
+    // simular caminar (bamboleo)
+    const bob = Math.sin(dog.t * 10) * 2;
+    const tilt = Math.sin(dog.t * 10) * 0.04;
+
+    const x = dog.x;
+    const y = groundY - drawH + bob;
+
+    ctx.save();
+
+    // sombra
+    ctx.globalAlpha = 0.25;
+    ctx.beginPath();
+    ctx.ellipse(x + drawW * 0.45, groundY + 6, drawW * 0.28, 7, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "black";
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // dibujo perro
+    ctx.translate(x + drawW / 2, y + drawH / 2);
+    ctx.rotate(tilt);
+    if (dog.dir === -1) ctx.scale(-1, 1);
+    ctx.drawImage(dogImage, -drawW / 2, -drawH / 2, drawW, drawH);
+
+    ctx.restore();
   }
 
   // ========= GAME STATE =========
@@ -512,6 +582,7 @@
       misses = 0;
       escaped = 0;
       killsTotal = 0;
+      resetDog();
       startNewRound();
       return;
     }
@@ -598,6 +669,7 @@
     if (btnPause) btnPause.textContent = "⏯️ Pausar / Reanudar";
     lastTime = 0;
 
+    resetDog();
     syncHUD();
     showToast("REINICIADO");
   }
@@ -638,9 +710,7 @@
     ctx.fillRect(0, 0, w, 46);
 
     ctx.fillStyle = "rgba(255,255,255,.92)";
-
-    // ✅ HUD EN ORBITRON (GAMER)
-    ctx.font = "700 14px Orbitron, system-ui, -apple-system, Segoe UI, Roboto";
+    ctx.font = "800 14px Oxanium, system-ui";
     ctx.fillText(`RONDA ${round}`, 12, 28);
 
     // derecha
@@ -658,9 +728,7 @@
     ctx.fillRect(0, h - 40, w, 40);
 
     ctx.fillStyle = "rgba(255,255,255,.92)";
-
-    // ✅ HUD EN ORBITRON (GAMER)
-    ctx.font = "600 14px Orbitron, system-ui, -apple-system, Segoe UI, Roboto";
+    ctx.font = "700 14px Oxanium, system-ui";
 
     const left = 12;
     ctx.fillText(`BALAS ${ammo}`, left, h - 14);
@@ -696,15 +764,14 @@
     ctx.lineWidth = 2;
     ctx.strokeRect(bx, by, bw, bh);
 
+    // ✅ DUCK HUNT se mantiene igual (no cambiamos estilo aquí)
     ctx.fillStyle = "rgba(255,255,255,.95)";
     ctx.textAlign = "center";
-
-    // ✅ TÍTULO NO SE CAMBIA (DUCK HUNT se queda igual)
     ctx.font = "800 42px system-ui, -apple-system, Segoe UI, Roboto";
     ctx.fillText(title, w / 2, by + 70);
 
-    // ✅ TEXTO DEL OVERLAY EN ORBITRON
-    ctx.font = "600 18px Orbitron, system-ui, -apple-system, Segoe UI, Roboto";
+    // ✅ resto en Oxanium (nuevo estilo)
+    ctx.font = "800 18px Oxanium, system-ui";
     let yy = by + 115;
     for (const line of lines) {
       ctx.fillText(line, w / 2, yy);
@@ -725,6 +792,9 @@
     trySpawn(ts);
 
     if (state === "playing") {
+      // ✅ mover perro solo cuando juega
+      updateDog(dt, round);
+
       for (const d of ducks) d.update(dt);
       ducks = ducks.filter(d => d.alive);
 
@@ -744,7 +814,14 @@
     ctx.clearRect(0, 0, w, h);
 
     drawBackground();
+
+    // ✅ perro caminando sobre el pasto
+    drawDog();
+
+    // patos volando
     for (const d of ducks) d.draw();
+
+    // disparos/partículas
     drawFX();
 
     drawNesHUD();
@@ -779,6 +856,7 @@
 
   // ========= INIT =========
   resizeCanvas();
+  resetDog();
   syncHUD();
   state = "menu";
   requestAnimationFrame(loop);
