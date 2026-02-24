@@ -1,4 +1,4 @@
-/* main.js - Duck Hunt Canvas 2D (Rondas + HUD NES en Español + FX + Sonidos 8-bit + Game Over + Perro caminando + Meta progresiva) */
+/* main.js - Duck Hunt Canvas 2D (10 Niveles + HUD + FX + Sonidos 8-bit + Game Over + Perro caminando + Meta progresiva 3..12) */
 
 (() => {
   // ========= CONFIG =========
@@ -10,8 +10,12 @@
 
   const AMMO_MAX = 6;
 
-  const DUCKS_PER_ROUND = 10;
-  const MAX_ROUNDS = 5;
+  // ✅ Para que el nivel 10 (meta 12) sea posible, necesitamos más patos por ronda
+  const DUCKS_PER_ROUND = 15;
+
+  // ✅ 10 niveles
+  const MAX_ROUNDS = 10;
+
   const MAX_ESCAPES = 20;
 
   // ========= DOM =========
@@ -26,7 +30,7 @@
   const elEscaped = document.getElementById("escaped");
   const elKills = document.getElementById("kills");
 
-  // ✅ NUEVO: referencias para META en el panel
+  // ✅ referencias para META en el panel
   const elRoundGoal = document.getElementById("roundGoal");
   const elGoalProgress = document.getElementById("goalProgress");
 
@@ -43,10 +47,10 @@
   const rand = (min, max) => Math.random() * (max - min) + min;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  // ✅ meta progresiva por ronda
-  // R1=5, R2=6, R3=7, R4=8, R5=9 (y nunca > DUCKS_PER_ROUND)
+  // ✅ META progresiva por nivel:
+  // Nivel 1=3, Nivel 2=4, ... Nivel 10=12
   function requiredKillsForRound(r) {
-    return clamp(4 + r, 1, DUCKS_PER_ROUND);
+    return 2 + r;
   }
 
   function showToast(text) {
@@ -423,7 +427,7 @@
     if (elEscaped) elEscaped.textContent = escaped;
     if (elKills) elKills.textContent = killsTotal;
 
-    // ✅ NUEVO: meta y progreso en panel
+    // ✅ meta y progreso en panel
     const req = requiredKillsForRound(round);
     if (elRoundGoal) elRoundGoal.textContent = req;
     if (elGoalProgress) elGoalProgress.textContent = `${killsThisRound}/${req}`;
@@ -445,13 +449,13 @@
 
   function difficulty() {
     const speed = 130 + (round - 1) * 30;
-    const spawnEvery = Math.max(360, 980 - (round - 1) * 110);
-    const maxAlive = Math.min(10, 3 + Math.floor((round - 1) / 1.8));
-    const lifeTime = Math.max(1800, 5200 - (round - 1) * 380);
+    const spawnEvery = Math.max(320, 980 - (round - 1) * 95);
+    const maxAlive = Math.min(12, 3 + Math.floor((round - 1) / 1.6));
+    const lifeTime = Math.max(1600, 5200 - (round - 1) * 340);
 
-    const zigAmp = clamp(16 + (round - 1) * 3.2, 16, 52);
-    const zigFreq = clamp(2.4 + (round - 1) * 0.22, 2.4, 4.8);
-    const flapFreq = clamp(7.8 + (round - 1) * 0.35, 7.8, 11);
+    const zigAmp = clamp(16 + (round - 1) * 3.2, 16, 58);
+    const zigFreq = clamp(2.4 + (round - 1) * 0.22, 2.4, 5.0);
+    const flapFreq = clamp(7.8 + (round - 1) * 0.35, 7.8, 11.6);
 
     return { speed, spawnEvery, maxAlive, lifeTime, zigAmp, zigFreq, flapFreq };
   }
@@ -660,7 +664,17 @@
 
     if (state === "roundEnd") {
       round++;
-      if (round > MAX_ROUNDS || escaped >= MAX_ESCAPES) gameOver("Se terminó el juego.");
+
+      // ✅ si ya pasaste el nivel 10, GANAS
+      if (round > MAX_ROUNDS) {
+        gameOverReason = "¡GANASTE! Completaste los 10 niveles.";
+        state = "gameOver";
+        sfx.rondaCompleta();
+        syncHUD();
+        return;
+      }
+
+      if (escaped >= MAX_ESCAPES) gameOver("Se escaparon demasiados patos.");
       else startNewRound();
       return;
     }
@@ -864,7 +878,7 @@
       for (const d of ducks) d.update(dt);
       ducks = ducks.filter(d => d.alive);
 
-      // fin de ronda: ya se resolvieron los 10
+      // fin de ronda: ya se resolvieron todos los patos generados en esta ronda
       if (spawnedThisRound >= DUCKS_PER_ROUND && resolvedThisRound >= DUCKS_PER_ROUND) {
         const req = requiredKillsForRound(round);
         if (killsThisRound >= req) endRound();
@@ -893,8 +907,9 @@
     if (state === "menu") {
       drawCenterOverlay("DUCK HUNT", [
         "CLICK PARA INICIAR",
-        "META PROGRESIVA:",
-        "RONDA 1=5  R2=6  R3=7  R4=8  R5=9",
+        "META PROGRESIVA (10 NIVELES):",
+        "N1=3  N2=4  N3=5  N4=6  N5=7",
+        "N6=8  N7=9  N8=10 N9=11 N10=12",
         "R = RECARGAR   P = PAUSA   M = SONIDO",
         `MEJOR PUNTAJE = ${highScore}`
       ]);
