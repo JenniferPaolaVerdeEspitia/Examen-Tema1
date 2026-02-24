@@ -4,7 +4,9 @@
   // ========= CONFIG =========
   const BG_SRC   = "img/Fondo.PNG";
   const DUCK_SRC = "img/pato.png";
-  const HS_KEY   = "img/Logo.png";
+
+  // ✅ CLAVE CORRECTA PARA LOCALSTORAGE (NO DEBE SER UNA IMAGEN)
+  const HS_KEY   = "duckhunt_highscore_v2";
 
   const AMMO_MAX = 6;
 
@@ -636,7 +638,9 @@
     ctx.fillRect(0, 0, w, 46);
 
     ctx.fillStyle = "rgba(255,255,255,.92)";
-    ctx.font = "700 14px system-ui, -apple-system, Segoe UI, Roboto";
+
+    // ✅ HUD EN ORBITRON (GAMER)
+    ctx.font = "700 14px Orbitron, system-ui, -apple-system, Segoe UI, Roboto";
     ctx.fillText(`RONDA ${round}`, 12, 28);
 
     // derecha
@@ -654,7 +658,9 @@
     ctx.fillRect(0, h - 40, w, 40);
 
     ctx.fillStyle = "rgba(255,255,255,.92)";
-    ctx.font = "600 14px system-ui, -apple-system, Segoe UI, Roboto";
+
+    // ✅ HUD EN ORBITRON (GAMER)
+    ctx.font = "600 14px Orbitron, system-ui, -apple-system, Segoe UI, Roboto";
 
     const left = 12;
     ctx.fillText(`BALAS ${ammo}`, left, h - 14);
@@ -692,10 +698,13 @@
 
     ctx.fillStyle = "rgba(255,255,255,.95)";
     ctx.textAlign = "center";
+
+    // ✅ TÍTULO NO SE CAMBIA (DUCK HUNT se queda igual)
     ctx.font = "800 42px system-ui, -apple-system, Segoe UI, Roboto";
     ctx.fillText(title, w / 2, by + 70);
 
-    ctx.font = "600 18px system-ui, -apple-system, Segoe UI, Roboto";
+    // ✅ TEXTO DEL OVERLAY EN ORBITRON
+    ctx.font = "600 18px Orbitron, system-ui, -apple-system, Segoe UI, Roboto";
     let yy = by + 115;
     for (const line of lines) {
       ctx.fillText(line, w / 2, yy);
